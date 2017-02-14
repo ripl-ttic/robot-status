@@ -26,7 +26,7 @@
 static char *robot_state_name[6]={"UNDEFINED","RUN","STANDBY","STOP","MANUAL","ERROR"};
 
 static char *warnings[]={"FAULT NAV","FAULT ACTUATION","FAULT SENSORS","FAULT TIMEOUT", // 16 "device faults"
-                         "","","","","","","","","","","",""
+                         "FAULT ESTOP","","","","","","","","","","",""
                          "FAULT HEARTBEAT","FAULT CONTROL","FAULT PERCEPT", // 16 "low-level software faults"
                          "","","","","","","","","","","","","",
                          "FAULT SHOUT","FAULT HUMAN","FAULT OVERRIDE", // 16 "high-level faults"
@@ -57,7 +57,7 @@ typedef struct _state_t {
     GHashTable *watchdog_hash;
     erlcm_robot_status_t status; 
     erlcm_robot_status_t prev;
-   int64_t standby_utime;
+    int64_t standby_utime;
 } state_t;
 
 
