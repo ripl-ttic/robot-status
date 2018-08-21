@@ -11,7 +11,7 @@
 #include <bot_core/bot_core.h>
 #include <bot_param/param_client.h>
 
-#include <lcmtypes/bot_core.h>
+#include <lcmtypes/bot2_core.h>
 #include <lcmtypes/hr_lcmtypes.h>
 
 
