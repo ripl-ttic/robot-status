@@ -141,18 +141,18 @@ robot_status_handle_event(state_t *self, const ripl_robot_state_command_t *cmd)
 
     // Command is overrride and we are not in manual (override):
     // Commanded to go to MANUAL (OVERRIDE) when in STOP
-    if ((cmd->state==ERLCM_ROBOT_STATUS_T_STATE_MANUAL) &&
-             (self->status.state==ERLCM_ROBOT_STATUS_T_STATE_STOP)) {
+    if ((cmd->state==RIPL_ROBOT_STATUS_T_STATE_MANUAL) &&
+             (self->status.state==RIPL_ROBOT_STATUS_T_STATE_STOP)) {
 
         // Change states if none of the active faults are consistent with those preventing MANUAL
-        if ( !(faults & ERLCM_ROBOT_STATUS_T_FAULTS_PREVENTING_MANUAL)) {
+        if ( !(faults & RIPL_ROBOT_STATUS_T_FAULTS_PREVENTING_MANUAL)) {
             // so switch to override:
             return robot_status_change_state(self, cmd->utime, cmd->state, faults, comment);
         }
         else {
             // override rejected because of 
             char *warning =
-                spew_out_warnings (self, faults & ERLCM_ROBOT_STATUS_T_FAULTS_PREVENTING_MANUAL, cmd->state);
+                spew_out_warnings (self, faults & RIPL_ROBOT_STATUS_T_FAULTS_PREVENTING_MANUAL, cmd->state);
             if (warning) 
                 comment = warning;
         }
@@ -166,10 +166,10 @@ robot_status_handle_event(state_t *self, const ripl_robot_state_command_t *cmd)
 
     // Faults preventing run transition:
     // All faults except these:
-    if ( !(faults & ERLCM_ROBOT_STATUS_T_FAULTS_PREVENTING_STANDBY)) { 
+    if ( !(faults & RIPL_ROBOT_STATUS_T_FAULTS_PREVENTING_STANDBY)) { 
         // 2. The UNDEFINED command comes from the self timer event. If we are in STANDBY => go to run yet?
-        if ( (cmd->state == ERLCM_ROBOT_STATUS_T_STATE_UNDEFINED) &&
-            (self->status.state == ERLCM_ROBOT_STATUS_T_STATE_STANDBY)) {
+        if ( (cmd->state == RIPL_ROBOT_STATUS_T_STATE_UNDEFINED) &&
+            (self->status.state == RIPL_ROBOT_STATUS_T_STATE_STANDBY)) {
             char mycomment[256];
             int64_t dt = cmd->utime - self->prev.utime;
             if (dt<STANDBY_GRACE_USEC) {
@@ -178,18 +178,18 @@ robot_status_handle_event(state_t *self, const ripl_robot_state_command_t *cmd)
                 uint8_t *bytes=(uint8_t*)&faults;
                 bytes[7]=(bytes[7]&0x0f)+(0xf0&(timer<<4));
                 //printf("timer:%"PRId64" faults:%"PRId64" faults2:%"PRId64"\n",timer,faults,(timer<<60));
-                return robot_status_change_state (self, cmd->utime, ERLCM_ROBOT_STATUS_T_STATE_STANDBY, faults, mycomment);
+                return robot_status_change_state (self, cmd->utime, RIPL_ROBOT_STATUS_T_STATE_STANDBY, faults, mycomment);
             }
             else if (dt<(STANDBY_GRACE_USEC+1e6)) {
                 snprintf(mycomment,256,"Active!");
-                return robot_status_change_state(self, cmd->utime, ERLCM_ROBOT_STATUS_T_STATE_RUN, faults, mycomment);
+                return robot_status_change_state(self, cmd->utime, RIPL_ROBOT_STATUS_T_STATE_RUN, faults, mycomment);
             }
             else {
                 printf("ERROR: standby wait time some whacky number: %"PRId64" \n",dt);
             }
         }
-        if ((cmd->state == ERLCM_ROBOT_STATUS_T_STATE_RUN) &&
-            (self->status.state == ERLCM_ROBOT_STATUS_T_STATE_RUN)) {
+        if ((cmd->state == RIPL_ROBOT_STATUS_T_STATE_RUN) &&
+            (self->status.state == RIPL_ROBOT_STATUS_T_STATE_RUN)) {
             // we are in RUN and the command is RUN so it's a nop.
             return self->status.state;
         }
@@ -200,22 +200,22 @@ robot_status_handle_event(state_t *self, const ripl_robot_state_command_t *cmd)
     // We have no fault preventing standby (it's okay if a human is near. 
     // ie. the guy leaving the forklift, we just won't go into run.)
     // All faults except these:
-    if ( !(faults & ERLCM_ROBOT_STATUS_T_FAULTS_PREVENTING_STANDBY)) { 
+    if ( !(faults & RIPL_ROBOT_STATUS_T_FAULTS_PREVENTING_STANDBY)) { 
         // only valid state changes are:
         // 1. RUN command and stopped => go to standby.
-        if (cmd->state==ERLCM_ROBOT_STATUS_T_STATE_RUN) {
-            if ((self->status.state==ERLCM_ROBOT_STATUS_T_STATE_STOP)||
-                (self->status.state==ERLCM_ROBOT_STATUS_T_STATE_STANDBY)) {                
-                return robot_status_change_state (self, cmd->utime, ERLCM_ROBOT_STATUS_T_STATE_STANDBY, faults, cmd->comment);
+        if (cmd->state==RIPL_ROBOT_STATUS_T_STATE_RUN) {
+            if ((self->status.state==RIPL_ROBOT_STATUS_T_STATE_STOP)||
+                (self->status.state==RIPL_ROBOT_STATUS_T_STATE_STANDBY)) {                
+                return robot_status_change_state (self, cmd->utime, RIPL_ROBOT_STATUS_T_STATE_STANDBY, faults, cmd->comment);
             }
         }
     }
     else {
         // run rejected because of :
-        if ((cmd->state==ERLCM_ROBOT_STATUS_T_STATE_RUN)&&((self->status.state==ERLCM_ROBOT_STATUS_T_STATE_STOP)||
-                                                          (self->status.state==ERLCM_ROBOT_STATUS_T_STATE_STANDBY))) {                
+        if ((cmd->state==RIPL_ROBOT_STATUS_T_STATE_RUN)&&((self->status.state==RIPL_ROBOT_STATUS_T_STATE_STOP)||
+                                                          (self->status.state==RIPL_ROBOT_STATUS_T_STATE_STANDBY))) {                
             char *warning =
-                spew_out_warnings( self, faults & ERLCM_ROBOT_STATUS_T_FAULTS_PREVENTING_STANDBY, cmd->state);
+                spew_out_warnings( self, faults & RIPL_ROBOT_STATUS_T_FAULTS_PREVENTING_STANDBY, cmd->state);
             if (warning) 
                 comment = warning;
         }
@@ -223,28 +223,28 @@ robot_status_handle_event(state_t *self, const ripl_robot_state_command_t *cmd)
     
 
     // Check if the faults are ok in the current run mode:
-    if (cmd->state != ERLCM_ROBOT_STATUS_T_STATE_STOP) {
+    if (cmd->state != RIPL_ROBOT_STATUS_T_STATE_STOP) {
         // OVERRIDE:
-        if ((self->status.state == ERLCM_ROBOT_STATUS_T_STATE_MANUAL)&&
-            ( !(faults & ERLCM_ROBOT_STATUS_T_FAULTS_OK_IN_MANUAL))) { 
+        if ((self->status.state == RIPL_ROBOT_STATUS_T_STATE_MANUAL)&&
+            ( !(faults & RIPL_ROBOT_STATUS_T_FAULTS_OK_IN_MANUAL))) { 
             return self->status.state;
         }        
         // RUN:
-        if ((self->status.state == ERLCM_ROBOT_STATUS_T_STATE_RUN) &&
-            (!(faults & ERLCM_ROBOT_STATUS_T_FAULTS_OK_IN_MANUAL))) { 
+        if ((self->status.state == RIPL_ROBOT_STATUS_T_STATE_RUN) &&
+            (!(faults & RIPL_ROBOT_STATUS_T_FAULTS_OK_IN_MANUAL))) { 
             return self->status.state;
         }        
         // STANDBY:
-        if ((self->status.state == ERLCM_ROBOT_STATUS_T_STATE_STANDBY)&&
-            (!(faults & ERLCM_ROBOT_STATUS_T_FAULTS_OK_IN_STANDBY))) { 
+        if ((self->status.state == RIPL_ROBOT_STATUS_T_STATE_STANDBY)&&
+            (!(faults & RIPL_ROBOT_STATUS_T_FAULTS_OK_IN_STANDBY))) { 
             return self->status.state;
         }        
 
 /*
-    if ((cmd->state==ERLCM_ROBOT_STATUS_T_STATE_ERROR)&&
+    if ((cmd->state==RIPL_ROBOT_STATUS_T_STATE_ERROR)&&
         (cmd->faults&ARLCM_ROBOT_STATUS_T_FAULT_SHOUT))
         printf("found shout\n");
-    if ((cmd->state==ERLCM_ROBOT_STATUS_T_STATE_ERROR)&&
+    if ((cmd->state==RIPL_ROBOT_STATUS_T_STATE_ERROR)&&
         (faults&ARLCM_ROBOT_STATUS_T_FAULT_SHOUT))
         printf("not masked shout\n");
 */
@@ -257,7 +257,7 @@ robot_status_handle_event(state_t *self, const ripl_robot_state_command_t *cmd)
     }
 
     // throw away timer events
-    if (cmd->state==ERLCM_ROBOT_STATUS_T_STATE_UNDEFINED)
+    if (cmd->state==RIPL_ROBOT_STATUS_T_STATE_UNDEFINED)
         return self->status.state;
 
     
@@ -265,7 +265,7 @@ robot_status_handle_event(state_t *self, const ripl_robot_state_command_t *cmd)
     // If we are here all the above didn't apply.
     // Either we have faults or requested to stop.
     // Either way STOP.
-    return robot_status_change_state (self, cmd->utime, ERLCM_ROBOT_STATUS_T_STATE_STOP, faults,cmd->comment);
+    return robot_status_change_state (self, cmd->utime, RIPL_ROBOT_STATUS_T_STATE_STOP, faults,cmd->comment);
 
 }
 
@@ -314,7 +314,7 @@ static void on_message(const lcm_recv_buf_t *rbuf, const char *channel, void *us
         return;
     }
     w->last_utime = rbuf->recv_utime;
-    w->state = ERLCM_HEARTBEAT_T_STATE_UNKNOWN;    
+    w->state = RIPL_HEARTBEAT_T_STATE_UNKNOWN;    
 }
 
 
@@ -330,16 +330,16 @@ robot_status_check_watchdogs(state_t *self)
         watchdog_t *w = (watchdog_t *) iter->data;
         int64_t dt = w->last_utime-now;
         
-        if ((w->state == ERLCM_HEARTBEAT_T_STATE_ERROR) ||
-            (w->state == ERLCM_HEARTBEAT_T_STATE_WARN) ) {
+        if ((w->state == RIPL_HEARTBEAT_T_STATE_ERROR) ||
+            (w->state == RIPL_HEARTBEAT_T_STATE_WARN) ) {
             // heartbeat status bad
             char comment[256];
             snprintf(comment,256,"HEART [%s] BAD STATUS:%d comment:%s",w->name,w->state, w->comment);
             ripl_robot_state_command_t cmd;
             cmd.utime = now;
-            cmd.state = ERLCM_ROBOT_STATUS_T_STATE_ERROR;
-            cmd.faults = ERLCM_ROBOT_STATUS_T_FAULT_HEARTBEAT;
-            cmd.fault_mask= ERLCM_ROBOT_STATUS_T_FAULT_MASK_NO_CHANGE;
+            cmd.state = RIPL_ROBOT_STATUS_T_STATE_ERROR;
+            cmd.faults = RIPL_ROBOT_STATUS_T_FAULT_HEARTBEAT;
+            cmd.fault_mask= RIPL_ROBOT_STATUS_T_FAULT_MASK_NO_CHANGE;
             cmd.comment = comment;
             cmd.sender = w->name;
             robot_status_handle_event (self, &cmd);
@@ -352,9 +352,9 @@ robot_status_check_watchdogs(state_t *self)
             // heartbeat status bad
             ripl_robot_state_command_t cmd;
             cmd.utime = now;
-            cmd.state = ERLCM_ROBOT_STATUS_T_STATE_ERROR;
-            cmd.faults = ERLCM_ROBOT_STATUS_T_FAULT_HEARTBEAT;
-            cmd.fault_mask= ERLCM_ROBOT_STATUS_T_FAULT_MASK_NO_CHANGE;
+            cmd.state = RIPL_ROBOT_STATUS_T_STATE_ERROR;
+            cmd.faults = RIPL_ROBOT_STATUS_T_FAULT_HEARTBEAT;
+            cmd.fault_mask= RIPL_ROBOT_STATUS_T_FAULT_MASK_NO_CHANGE;
             cmd.sender = self->name;
             cmd.comment = comment;
             robot_status_handle_event (self, &cmd);
@@ -373,9 +373,9 @@ on_timer(gpointer user_data)
     // send timer event
     ripl_robot_state_command_t cmd;
     cmd.utime = bot_timestamp_now();
-    cmd.state = ERLCM_ROBOT_STATUS_T_STATE_UNDEFINED;
-    cmd.faults = ERLCM_ROBOT_STATUS_T_FAULT_NONE;
-    cmd.fault_mask = ERLCM_ROBOT_STATUS_T_FAULT_MASK_NO_CHANGE;
+    cmd.state = RIPL_ROBOT_STATUS_T_STATE_UNDEFINED;
+    cmd.faults = RIPL_ROBOT_STATUS_T_FAULT_NONE;
+    cmd.fault_mask = RIPL_ROBOT_STATUS_T_FAULT_MASK_NO_CHANGE;
     cmd.comment = "";
     cmd.sender = self->name;
     robot_status_handle_event(self, &cmd);
@@ -404,7 +404,7 @@ robot_status_create()
         goto fail;
     }
     self->name = strdup("ROBOT_STATUS");
-    self->status.state=ERLCM_ROBOT_STATUS_T_STATE_STOP;
+    self->status.state=RIPL_ROBOT_STATUS_T_STATE_STOP;
     self->status.comment=strdup("");
     self->prev.comment=strdup("");
 
