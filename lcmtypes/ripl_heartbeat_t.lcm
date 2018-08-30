@@ -1,0 +1,21 @@
+package ripl;
+
+// heartbeat message.
+// state:
+//   "ALL_OK" should be set only if the module is known to be functioning correctly.
+struct heartbeat_t
+{
+    int64_t utime;
+    // tolerance between utimes. Clients can set this so that the Watch dog 
+    // knows hoxw long to wait before reporting an error. 
+    int64_t tol_utime; 
+
+    int32_t state;
+    string comment;
+
+    const int32_t STATE_UNKNOWN = 0;
+    const int32_t STATE_ALL_OK  = 1;
+    const int32_t STATE_INIT    = 2;
+    const int32_t STATE_WARN    = 3;
+    const int32_t STATE_ERROR   = 4;
+}

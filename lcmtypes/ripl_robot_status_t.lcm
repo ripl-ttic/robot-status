@@ -1,0 +1,65 @@
+package ripl;
+
+struct robot_status_t
+{
+    int64_t utime;
+	
+    int8_t state; 
+    int64_t faults; 
+    string comment;
+
+    // State constants. Must match that defined in ripl_robot_state_command_t
+    const int8_t STATE_UNDEFINED = 0;
+    const int8_t STATE_RUN = 1;
+    const int8_t STATE_STANDBY = 2;
+    const int8_t STATE_STOP = 3;
+    const int8_t STATE_MANUAL = 4;
+    const int8_t STATE_ERROR = 5;
+    
+    // Device faults:                              0123456789012345
+    const int64_t FAULT_NONE                   = 0x0000000000000000;
+    const int64_t FAULT_NAV                    = 0x0000000000000001;
+    const int64_t FAULT_ACTUATION              = 0x0000000000000002;
+    const int64_t FAULT_SENSORS                = 0x0000000000000004;
+    const int64_t FAULT_TIMEOUT                = 0x0000000000000008;
+    const int64_t FAULT_ESTOP                  = 0x0000000000000010;    
+    const int64_t FAULT_LOCKOUT                = 0x0000000000000020;    
+    const int64_t FAULT_BATTERY                = 0x0000000000000040;    
+
+    // Low level software faults:                  0123456789012345
+    const int64_t FAULT_HEARTBEAT              = 0x0000000000010000;
+    const int64_t FAULT_CONTROL                = 0x0000000000020000;
+    const int64_t FAULT_PERCEPT                = 0x0000000000040000;
+
+    // High level faults:                          0123456789012345
+    const int64_t FAULT_SHOUT                  = 0x0000000100000000;
+    const int64_t FAULT_HUMAN                  = 0x0000000200000000;
+    const int64_t FAULT_MANUAL                 = 0x0000000400000000;
+
+    const int64_t FAULT_FRONT_DROPOFF 	       = 0x0000001000000000;
+    const int64_t FAULT_REAR_DROPOFF 	       = 0x0000002000000000;
+
+
+    // Conditions for transitions:                 0123456789012345
+    //const int64_t FAULT_LEVER_NOT_NEUTRAL      = 0x0100000000000000;
+    //const int64_t FAULT_PARKBRAKE_OFF          = 0x0200000000000000;
+    //const int64_t FAULT_STANDBY_TIMER_BIT1     = 0x1000000000000000;
+    //const int64_t FAULT_STANDBY_TIMER_BIT2     = 0x2000000000000000;
+    //const int64_t FAULT_STANDBY_TIMER_BIT3     = 0x4000000000000000;
+    //const int64_t FAULT_STANDBY_TIMER_MASK     = 0x7000000000000000;
+
+
+    // Fault masks:                                0123456789012345
+    const int64_t FAULT_MASK_NO_CHANGE = 0;
+    const int64_t FAULTS_PREVENTING_RUN        = 0xffffffffffffffff;
+    const int64_t FAULTS_PREVENTING_STANDBY    = 0x0fffffffffffffff;
+
+    // Transition to manual is prevented by all faults except
+    const int64_t FAULTS_PREVENTING_MANUAL     = 0x00fffff0ffffffff;
+    const int64_t FAULTS_OK_IN_MANUAL          = 0x00fffff0ffffffff;
+    const int64_t FAULTS_OK_IN_RUN             = 0x00ffffffffffffff;
+    const int64_t FAULTS_OK_IN_STANDBY         = 0x00ffffffffffffff;
+    const int64_t FAULT_MASK_CLEAR_ALL         = 0xffffffffffffffff;
+
+
+}

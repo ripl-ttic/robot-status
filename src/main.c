@@ -12,14 +12,13 @@
 #include <bot_param/param_client.h>
 
 #include <lcmtypes/bot2_core.h>
-#include <lcmtypes/hr_lcmtypes.h>
-
+#include <lcmtypes/robot_status_lcmtypes.h>
 
 #if DEBUG
 #define dbg(...) do { fprintf(stderr, "[%s:%d] ", __FILE__, __LINE__); \
                       fprintf(stderr, __VA_ARGS__); } while(0)
 #else
-#define dbg(...) 
+#define dbg(...)
 #endif
 
 // Both the ROBOT_STATE_NAMES and WARNINGS Must match the constants defined in ripl_robot_state_command_t.lcm
@@ -55,14 +54,14 @@ typedef struct _state_t {
     int verbose;
     int developer_mode;
     GHashTable *watchdog_hash;
-    ripl_robot_status_t status; 
+    ripl_robot_status_t status;
     ripl_robot_status_t prev;
     int64_t standby_utime;
 } state_t;
 
 
 static void
-robot_status_publish_state(state_t *self) 
+robot_status_publish_state(state_t *self)
 {
     self->status.utime = bot_timestamp_now();
     ripl_robot_status_t_publish (self->lcm, "ROBOT_STATUS", &self->status);
@@ -70,7 +69,7 @@ robot_status_publish_state(state_t *self)
 
 
 static int
-robot_status_change_state(state_t *self, const int64_t utime, const int8_t state,  
+robot_status_change_state(state_t *self, const int64_t utime, const int8_t state,
                           const int64_t faults, const char *comment)
 {
     if (self->verbose)
@@ -127,13 +126,13 @@ robot_status_handle_event(state_t *self, const ripl_robot_state_command_t *cmd)
         printf("robot_status_handle_event():state: %d faults:%"PRId64" comment:%s\n",
                self->status.state, self->status.faults, self->status.comment?self->status.comment:"<none>");
         printf("robot_status_handle_event():cmd: %d faults:%"PRId64"(mask:%"PRId64") %s:%s\n",
-               cmd->state, cmd->faults, cmd->fault_mask, cmd->sender?cmd->sender:"<none>", 
+               cmd->state, cmd->faults, cmd->fault_mask, cmd->sender?cmd->sender:"<none>",
                cmd->comment?cmd->comment:"<none>");
     }
 
     // Add existing faults to new faults then process consquences below.
     int64_t faults = self->status.faults | cmd->faults;
-    
+
 
     // TODO: add some sanity check clearing faults.
     faults &= ~cmd->fault_mask;
@@ -150,13 +149,13 @@ robot_status_handle_event(state_t *self, const ripl_robot_state_command_t *cmd)
             return robot_status_change_state(self, cmd->utime, cmd->state, faults, comment);
         }
         else {
-            // override rejected because of 
+            // override rejected because of
             char *warning =
                 spew_out_warnings (self, faults & RIPL_ROBOT_STATUS_T_FAULTS_PREVENTING_MANUAL, cmd->state);
-            if (warning) 
+            if (warning)
                 comment = warning;
         }
-            
+
     }
 
     // Upon receiving a RUN command, we transition to by
@@ -166,7 +165,7 @@ robot_status_handle_event(state_t *self, const ripl_robot_state_command_t *cmd)
 
     // Faults preventing run transition:
     // All faults except these:
-    if ( !(faults & RIPL_ROBOT_STATUS_T_FAULTS_PREVENTING_STANDBY)) { 
+    if ( !(faults & RIPL_ROBOT_STATUS_T_FAULTS_PREVENTING_STANDBY)) {
         // 2. The UNDEFINED command comes from the self timer event. If we are in STANDBY => go to run yet?
         if ( (cmd->state == RIPL_ROBOT_STATUS_T_STATE_UNDEFINED) &&
             (self->status.state == RIPL_ROBOT_STATUS_T_STATE_STANDBY)) {
@@ -195,17 +194,17 @@ robot_status_handle_event(state_t *self, const ripl_robot_state_command_t *cmd)
         }
     }
 
-    
 
-    // We have no fault preventing standby (it's okay if a human is near. 
+
+    // We have no fault preventing standby (it's okay if a human is near.
     // ie. the guy leaving the forklift, we just won't go into run.)
     // All faults except these:
-    if ( !(faults & RIPL_ROBOT_STATUS_T_FAULTS_PREVENTING_STANDBY)) { 
+    if ( !(faults & RIPL_ROBOT_STATUS_T_FAULTS_PREVENTING_STANDBY)) {
         // only valid state changes are:
         // 1. RUN command and stopped => go to standby.
         if (cmd->state==RIPL_ROBOT_STATUS_T_STATE_RUN) {
             if ((self->status.state==RIPL_ROBOT_STATUS_T_STATE_STOP)||
-                (self->status.state==RIPL_ROBOT_STATUS_T_STATE_STANDBY)) {                
+                (self->status.state==RIPL_ROBOT_STATUS_T_STATE_STANDBY)) {
                 return robot_status_change_state (self, cmd->utime, RIPL_ROBOT_STATUS_T_STATE_STANDBY, faults, cmd->comment);
             }
         }
@@ -213,32 +212,32 @@ robot_status_handle_event(state_t *self, const ripl_robot_state_command_t *cmd)
     else {
         // run rejected because of :
         if ((cmd->state==RIPL_ROBOT_STATUS_T_STATE_RUN)&&((self->status.state==RIPL_ROBOT_STATUS_T_STATE_STOP)||
-                                                          (self->status.state==RIPL_ROBOT_STATUS_T_STATE_STANDBY))) {                
+                                                          (self->status.state==RIPL_ROBOT_STATUS_T_STATE_STANDBY))) {
             char *warning =
                 spew_out_warnings( self, faults & RIPL_ROBOT_STATUS_T_FAULTS_PREVENTING_STANDBY, cmd->state);
-            if (warning) 
+            if (warning)
                 comment = warning;
         }
     }
-    
+
 
     // Check if the faults are ok in the current run mode:
     if (cmd->state != RIPL_ROBOT_STATUS_T_STATE_STOP) {
         // OVERRIDE:
         if ((self->status.state == RIPL_ROBOT_STATUS_T_STATE_MANUAL)&&
-            ( !(faults & RIPL_ROBOT_STATUS_T_FAULTS_OK_IN_MANUAL))) { 
+            ( !(faults & RIPL_ROBOT_STATUS_T_FAULTS_OK_IN_MANUAL))) {
             return self->status.state;
-        }        
+        }
         // RUN:
         if ((self->status.state == RIPL_ROBOT_STATUS_T_STATE_RUN) &&
-            (!(faults & RIPL_ROBOT_STATUS_T_FAULTS_OK_IN_MANUAL))) { 
+            (!(faults & RIPL_ROBOT_STATUS_T_FAULTS_OK_IN_MANUAL))) {
             return self->status.state;
-        }        
+        }
         // STANDBY:
         if ((self->status.state == RIPL_ROBOT_STATUS_T_STATE_STANDBY)&&
-            (!(faults & RIPL_ROBOT_STATUS_T_FAULTS_OK_IN_STANDBY))) { 
+            (!(faults & RIPL_ROBOT_STATUS_T_FAULTS_OK_IN_STANDBY))) {
             return self->status.state;
-        }        
+        }
 
 /*
     if ((cmd->state==RIPL_ROBOT_STATUS_T_STATE_ERROR)&&
@@ -260,8 +259,8 @@ robot_status_handle_event(state_t *self, const ripl_robot_state_command_t *cmd)
     if (cmd->state==RIPL_ROBOT_STATUS_T_STATE_UNDEFINED)
         return self->status.state;
 
-    
-  
+
+
     // If we are here all the above didn't apply.
     // Either we have faults or requested to stop.
     // Either way STOP.
@@ -269,14 +268,14 @@ robot_status_handle_event(state_t *self, const ripl_robot_state_command_t *cmd)
 
 }
 
-static void on_robot_state_command(const lcm_recv_buf_t *rbuf, const char *channel, 
+static void on_robot_state_command(const lcm_recv_buf_t *rbuf, const char *channel,
                                    const ripl_robot_state_command_t *cmd, void *user)
 {
     state_t *self = (state_t*) user;
-    robot_status_handle_event (self, cmd); 
+    robot_status_handle_event (self, cmd);
 }
 
-static void on_heartbeat(const lcm_recv_buf_t *rbuf, const char *channel, 
+static void on_heartbeat(const lcm_recv_buf_t *rbuf, const char *channel,
                          const ripl_heartbeat_t *msg, void *user)
 {
     state_t *self = (state_t*) user;
@@ -289,11 +288,11 @@ static void on_heartbeat(const lcm_recv_buf_t *rbuf, const char *channel,
         w = (watchdog_t *) calloc(1,sizeof(watchdog_t));
         w->name=strdup(channel);
         w->channel=strdup(channel);
-        if (msg->tol_utime) 
+        if (msg->tol_utime)
             w->tol_usec = msg->tol_utime;
         else
             w->tol_usec = 1e6;
-            
+
         g_hash_table_insert (self->watchdog_hash, w->channel, w);
     }
     w->last_utime = msg->utime;
@@ -314,13 +313,13 @@ static void on_message(const lcm_recv_buf_t *rbuf, const char *channel, void *us
         return;
     }
     w->last_utime = rbuf->recv_utime;
-    w->state = RIPL_HEARTBEAT_T_STATE_UNKNOWN;    
+    w->state = RIPL_HEARTBEAT_T_STATE_UNKNOWN;
 }
 
 
 
 // Check basic health of robot
-int 
+int
 robot_status_check_watchdogs(state_t *self)
 {
     int64_t now = bot_timestamp_now();
@@ -329,7 +328,7 @@ robot_status_check_watchdogs(state_t *self)
     for (GList *iter = watchdogs; iter; iter=iter->next) {
         watchdog_t *w = (watchdog_t *) iter->data;
         int64_t dt = w->last_utime-now;
-        
+
         if ((w->state == RIPL_HEARTBEAT_T_STATE_ERROR) ||
             (w->state == RIPL_HEARTBEAT_T_STATE_WARN) ) {
             // heartbeat status bad
@@ -366,7 +365,7 @@ robot_status_check_watchdogs(state_t *self)
 }
 
 static gboolean
-on_timer(gpointer user_data) 
+on_timer(gpointer user_data)
 {
     state_t *self = (state_t *) user_data;
 
@@ -391,7 +390,7 @@ on_timer(gpointer user_data)
 static void
 robot_status_destroy(state_t *self)
 {
-    if (self) 
+    if (self)
         free(self);
 }
 
@@ -415,7 +414,7 @@ robot_status_create()
         dbg("Error: robot_status_create() failed to get global lcm object\n");
         goto fail;
     }
-    
+
     bot_glib_mainloop_attach_lcm (self->lcm);
 
     self->watchdog_hash = g_hash_table_new(g_str_hash,g_str_equal);
@@ -431,9 +430,9 @@ robot_status_create()
         dbg("Error: robot_status_create() fail to get global param object\n");
         goto fail;
     }
-    char **watch_channels = 
+    char **watch_channels =
         bot_param_get_str_array_alloc (self->param, "robot_status.watch_channels");
-    for (char **chan=watch_channels; (chan && *chan); chan++) { 
+    for (char **chan=watch_channels; (chan && *chan); chan++) {
         watchdog_t *w = (watchdog_t *) calloc(1,sizeof(watchdog_t));
         w->name=strdup(*chan);
         w->channel=strdup(*chan);
@@ -446,7 +445,7 @@ robot_status_create()
 
     g_timeout_add(1000.0/PUBLISH_STATE_HZ, on_timer, self);
 
-    return self; 
+    return self;
 fail:
     robot_status_destroy(self);
     return NULL;
@@ -467,7 +466,7 @@ static void usage()
 int main(int argc, char *argv[])
 {
     setlinebuf (stdout);
-    
+
     char *optstring = "hvD";
     char c;
     struct option long_opts[] = {
@@ -479,10 +478,10 @@ int main(int argc, char *argv[])
     state_t *self = robot_status_create();
     if (!self)
         return 1;
-    
+
     while ((c = getopt_long (argc, argv, optstring, long_opts, 0)) >= 0)
     {
-        switch (c) 
+        switch (c)
         {
         case 'D':
             self->developer_mode = 1;
@@ -507,7 +506,7 @@ int main(int argc, char *argv[])
 
     /* sit and wait for messages */
     g_main_loop_run(main_loop);
-    
+
     /* clean */
     robot_status_destroy(self);
     return 0;

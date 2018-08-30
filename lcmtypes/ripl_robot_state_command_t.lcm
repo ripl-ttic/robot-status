@@ -1,0 +1,24 @@
+package ripl;
+
+// state:
+// The states and faults are documented in robot_status_t
+
+struct robot_state_command_t
+{
+    int64_t utime;
+    int8_t state;  // Also defined in ripl_robot_status_t 
+    int64_t faults;
+    int64_t fault_mask;
+    string sender;
+    string comment;
+
+    // State constants. Must match that defined in ripl_robot_status_t
+    const int8_t STATE_UNDEFINED = 0;
+    const int8_t STATE_RUN = 1;
+    const int8_t STATE_STANDBY = 2;
+    const int8_t STATE_STOP = 3;
+    const int8_t STATE_MANUAL = 4;
+    const int8_t STATE_ERROR = 5;
+    //const int8_t STATE_FRONT_DROPOFF_WARNING = 6;
+    //const int8_t STATE_REAR_DROPOFF_WARNING = 7;
+}
