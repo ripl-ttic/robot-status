@@ -22,7 +22,7 @@
 #define dbg(...) 
 #endif
 
-// Both the ROBOT_STATE_NAMES and WARNINGS Must match the constants defined in erlcm_robot_state_command_t.lcm
+// Both the ROBOT_STATE_NAMES and WARNINGS Must match the constants defined in ripl_robot_state_command_t.lcm
 static char *robot_state_name[6]={"UNDEFINED","RUN","STANDBY","STOP","MANUAL","ERROR"};
 
 static char *warnings[]={"FAULT NAV","FAULT ACTUATION","FAULT SENSORS","FAULT TIMEOUT", // 16 "device faults"
@@ -55,8 +55,8 @@ typedef struct _state_t {
     int verbose;
     int developer_mode;
     GHashTable *watchdog_hash;
-    erlcm_robot_status_t status; 
-    erlcm_robot_status_t prev;
+    ripl_robot_status_t status; 
+    ripl_robot_status_t prev;
     int64_t standby_utime;
 } state_t;
 
@@ -65,7 +65,7 @@ static void
 robot_status_publish_state(state_t *self) 
 {
     self->status.utime = bot_timestamp_now();
-    erlcm_robot_status_t_publish (self->lcm, "ROBOT_STATUS", &self->status);
+    ripl_robot_status_t_publish (self->lcm, "ROBOT_STATUS", &self->status);
 }
 
 
@@ -99,7 +99,7 @@ robot_status_change_state(state_t *self, const int64_t utime, const int8_t state
 static char *
 spew_out_warnings(state_t *self, int64_t faults, int8_t cmd) {
     char * first_warning=NULL;
-    erlcm_comment_t comment;
+    ripl_comment_t comment;
     comment.utime = bot_timestamp_now();
     for (int i=0; i < 64; i++) {
         if ( ( (int64_t)1 << i) & faults ) {
@@ -112,14 +112,14 @@ spew_out_warnings(state_t *self, int64_t faults, int8_t cmd) {
             snprintf(buff,256,"%s prevented by:[0x%08x%08x]",robot_state_name[cmd],(i>31?(1<<(i-32)):0),(i<32?(1<<i):0));
             comment.comment = buff;
             printf("[%"PRId64"]: %s\n",comment.utime,comment.comment);
-            erlcm_comment_t_publish(self->lcm,"COMMENT",&comment);
+            ripl_comment_t_publish(self->lcm,"COMMENT",&comment);
         }
     }
     return first_warning;
 }
 
 static int
-robot_status_handle_event(state_t *self, const erlcm_robot_state_command_t *cmd)
+robot_status_handle_event(state_t *self, const ripl_robot_state_command_t *cmd)
 {
 
     char *comment = cmd->comment;
@@ -270,14 +270,14 @@ robot_status_handle_event(state_t *self, const erlcm_robot_state_command_t *cmd)
 }
 
 static void on_robot_state_command(const lcm_recv_buf_t *rbuf, const char *channel, 
-                                   const erlcm_robot_state_command_t *cmd, void *user)
+                                   const ripl_robot_state_command_t *cmd, void *user)
 {
     state_t *self = (state_t*) user;
     robot_status_handle_event (self, cmd); 
 }
 
 static void on_heartbeat(const lcm_recv_buf_t *rbuf, const char *channel, 
-                         const erlcm_heartbeat_t *msg, void *user)
+                         const ripl_heartbeat_t *msg, void *user)
 {
     state_t *self = (state_t*) user;
     watchdog_t *w = g_hash_table_lookup(self->watchdog_hash, channel);
@@ -335,7 +335,7 @@ robot_status_check_watchdogs(state_t *self)
             // heartbeat status bad
             char comment[256];
             snprintf(comment,256,"HEART [%s] BAD STATUS:%d comment:%s",w->name,w->state, w->comment);
-            erlcm_robot_state_command_t cmd;
+            ripl_robot_state_command_t cmd;
             cmd.utime = now;
             cmd.state = ERLCM_ROBOT_STATUS_T_STATE_ERROR;
             cmd.faults = ERLCM_ROBOT_STATUS_T_FAULT_HEARTBEAT;
@@ -350,7 +350,7 @@ robot_status_check_watchdogs(state_t *self)
             char comment[256];
             snprintf(comment,256,"HEART [%s]: TIMEOUT:%f (tol:%f)",w->name,dt*1.0e-6,w->tol_usec*1.0e-6);
             // heartbeat status bad
-            erlcm_robot_state_command_t cmd;
+            ripl_robot_state_command_t cmd;
             cmd.utime = now;
             cmd.state = ERLCM_ROBOT_STATUS_T_STATE_ERROR;
             cmd.faults = ERLCM_ROBOT_STATUS_T_FAULT_HEARTBEAT;
@@ -371,7 +371,7 @@ on_timer(gpointer user_data)
     state_t *self = (state_t *) user_data;
 
     // send timer event
-    erlcm_robot_state_command_t cmd;
+    ripl_robot_state_command_t cmd;
     cmd.utime = bot_timestamp_now();
     cmd.state = ERLCM_ROBOT_STATUS_T_STATE_UNDEFINED;
     cmd.faults = ERLCM_ROBOT_STATUS_T_FAULT_NONE;
@@ -421,8 +421,8 @@ robot_status_create()
     self->watchdog_hash = g_hash_table_new(g_str_hash,g_str_equal);
 
     // Subscribe to LCM messages
-    erlcm_robot_state_command_t_subscribe(self->lcm, "ROBOT_STATE_COMMAND", on_robot_state_command, self);
-    erlcm_heartbeat_t_subscribe(self->lcm, "HEARTBEAT.*", on_heartbeat, self);
+    ripl_robot_state_command_t_subscribe(self->lcm, "ROBOT_STATE_COMMAND", on_robot_state_command, self);
+    ripl_heartbeat_t_subscribe(self->lcm, "HEARTBEAT.*", on_heartbeat, self);
 
     // for each process in list:
     /* config */
