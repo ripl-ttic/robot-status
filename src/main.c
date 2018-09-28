@@ -12,7 +12,11 @@
 #include <bot_param/param_client.h>
 
 #include <lcmtypes/bot2_core.h>
-#include <lcmtypes/robot_status_lcmtypes.h>
+#include <lcmtypes/ripl_comment_t.h>
+#include <lcmtypes/ripl_heartbeat_t.h>
+#include <lcmtypes/ripl_robot_state_command_t.h>
+#include <lcmtypes/ripl_robot_status_t.h>
+
 
 #if DEBUG
 #define dbg(...) do { fprintf(stderr, "[%s:%d] ", __FILE__, __LINE__); \

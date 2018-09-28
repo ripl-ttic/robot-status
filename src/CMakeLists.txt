@@ -10,13 +10,12 @@ include_directories(
 
 add_executable(robot-status main.c)
 
-target_link_libraries (robot-status ${LCMTYPES_LIBS})
-
 pods_use_pkg_config_packages(robot-status
     glib-2.0
     gthread-2.0
     lcm
     bot2-core
+    lcmtypes_robot-status
     lcmtypes_bot2-core
     bot2-param-client)
 
