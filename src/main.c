@@ -12,7 +12,7 @@
 #include <bot_param/param_client.h>
 
 #include <lcmtypes/bot2_core.h>
-#include <lcmtypes/ripl_comment_t.h>
+#include <lcmtypes/ripl_text_t.h>
 #include <lcmtypes/ripl_heartbeat_t.h>
 #include <lcmtypes/ripl_robot_state_command_t.h>
 #include <lcmtypes/ripl_robot_status_t.h>
@@ -102,7 +102,7 @@ robot_status_change_state(state_t *self, const int64_t utime, const int8_t state
 static char *
 spew_out_warnings(state_t *self, int64_t faults, int8_t cmd) {
     char * first_warning=NULL;
-    ripl_comment_t comment;
+    ripl_text_t comment;
     comment.utime = bot_timestamp_now();
     for (int i=0; i < 64; i++) {
         if ( ( (int64_t)1 << i) & faults ) {
@@ -113,9 +113,9 @@ spew_out_warnings(state_t *self, int64_t faults, int8_t cmd) {
 
             //snprintf(buff,256,"%s prevented by:[0x%08x%08x]%s",robot_state_name[cmd],(i>31?(1<<(i-32)):0),(i<32?(1<<i):0),warnings[i]);
             snprintf(buff,256,"%s prevented by:[0x%08x%08x]",robot_state_name[cmd],(i>31?(1<<(i-32)):0),(i<32?(1<<i):0));
-            comment.comment = buff;
-            printf("[%"PRId64"]: %s\n",comment.utime,comment.comment);
-            ripl_comment_t_publish(self->lcm,"COMMENT",&comment);
+            comment.text = buff;
+            printf("[%"PRId64"]: %s\n",comment.utime,comment.text);
+            ripl_text_t_publish(self->lcm,"COMMENT",&comment);
         }
     }
     return first_warning;
