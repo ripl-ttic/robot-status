@@ -12,7 +12,7 @@
 #include <bot_param/param_client.h>
 
 #include <lcmtypes/bot2_core.h>
-#include <lcmtypes/ripl_warning_t.h>
+#include <lcmtypes/rslcm_warning_t.h>
 #include <lcmtypes/rslcm_heartbeat_t.h>
 #include <lcmtypes/rslcm_robot_state_command_t.h>
 #include <lcmtypes/rslcm_robot_status_t.h>
