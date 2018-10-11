@@ -102,7 +102,7 @@ robot_status_change_state(state_t *self, const int64_t utime, const int8_t state
 static char *
 spew_out_warnings(state_t *self, int64_t faults, int8_t cmd) {
     char * first_warning=NULL;
-    ripl_warning_t comment;
+    rslcm_warning_t comment;
     comment.utime = bot_timestamp_now();
     for (int i=0; i < 64; i++) {
         if ( ( (int64_t)1 << i) & faults ) {
@@ -115,7 +115,7 @@ spew_out_warnings(state_t *self, int64_t faults, int8_t cmd) {
             snprintf(buff,256,"%s prevented by:[0x%08x%08x]",robot_state_name[cmd],(i>31?(1<<(i-32)):0),(i<32?(1<<i):0));
             comment.warning = buff;
             printf("[%"PRId64"]: %s\n",comment.utime,comment.warning);
-            ripl_warning_t_publish(self->lcm,"COMMENT",&comment);
+            rslcm_warning_t_publish(self->lcm,"COMMENT",&comment);
         }
     }
     return first_warning;
